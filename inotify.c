@@ -4,6 +4,7 @@
 #include<stdlib.h>
 #include<signal.h>
 #include <time.h>
+#include "udpclient.c"
  
 #define EVENTS_SIZE 1024  
 #define EVENT_SIZE  ( sizeof (struct inotify_event) ) //event's size 
@@ -56,7 +57,7 @@ void sig_handler(int sig)
 }
  
  
-void watch(char* directory_path)
+void* watch(char* directory_path)
 {
        signal(SIGINT,sig_handler);
   
@@ -65,13 +66,15 @@ void watch(char* directory_path)
        wd = inotify_add_watch(fd,directory_path, IN_MODIFY | IN_ACCESS); // add watch
  
        if(wd==-1){
-               printf("Could not watch : %s\n",directory_path);
+               printf("Could not watch : %s\n",(char*)directory_path);
+		exit(0);
        }
        else{
-              printf("Watching : %s\n",directory_path);
+              printf("Watching : %s\n",(char*)directory_path);
        }
  
-	    reinit_html(directory_path);
+	reinit_html((char*)directory_path);
+	udp();
         int i,length;
         char buffer[BUFFER_SIZE];
         
@@ -79,9 +82,7 @@ void watch(char* directory_path)
  
 		i = 0;
  
-            length = read(fd,buffer,BUFFER_SIZE); // read buffer
-            
-                                                
+            length = read(fd,buffer,BUFFER_SIZE); // read buffer                    
             while(i<length)                        //handel event
             {                   
                 struct inotify_event *event = (struct inotify_event *) &buffer[i];
@@ -93,10 +94,12 @@ void watch(char* directory_path)
                     if (!(event->mask & IN_ISDIR)) {
                         if (event->mask & IN_MODIFY) {
                             print_to_file(event->name, "write", timebuffer);
+				send_message(event->name, "write", timebuffer);
 
                         }
                         else if (event->mask & IN_ACCESS) {
                             print_to_file(event->name, "read", timebuffer);
+				send_message(event->name, "read", timebuffer);
 
                         }
                     }

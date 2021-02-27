@@ -8,17 +8,28 @@
 #include <netinet/in.h> 
 
 #define PORT	 8080 
-#define MAXLINE 1024 
+#define SIZE 1024 
 
-/***UDP CLIENT TEST***/
-//TODO: Chnage main to function
 
-int main() { 
-	int recvMsg, len; 
-	int sockfd; 
-	char buffer[MAXLINE]; 
-	char *string = "Hello from client\n"; 	//TODO: DELETE, only for testing
-	struct sockaddr_in	 servaddr; 
+struct sockaddr_in servaddr; 
+int sockfd; 
+
+void send_message(char *file_name, char *event_name, char *time_stamp)
+{
+    if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+    {
+        printf("\n Error : Connect Failed \n");
+        exit(0);
+    }
+
+	char msg[SIZE];
+	sprintf(msg, "FILE ACCESSED: %s\nACCESS: %s\nTIME OF ACCESS: %s\n", file_name, event_name, time_stamp);
+	sendto(sockfd, (const char *)msg, strlen(msg), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+	printf("message sent\n"); 
+}
+
+
+int udp() { 
 
 	// Creating socket file descriptor 
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
@@ -27,20 +38,12 @@ int main() {
 	} 
 
 	memset(&servaddr, 0, sizeof(servaddr)); 
-	
+
 	//connect to netcat
 	servaddr.sin_family = AF_INET; 
 	servaddr.sin_port = htons(PORT); 
 	servaddr.sin_addr.s_addr = INADDR_ANY; 
-	
-	sendto(sockfd, (const char *)string, strlen(string), 
-		MSG_CONFIRM, (const struct sockaddr *) &servaddr, 
-			sizeof(servaddr)); 
-	printf("Hello message sent\n"); 
 		
-
-
-	close(sockfd); 
 	return 0; 
 } 
 
